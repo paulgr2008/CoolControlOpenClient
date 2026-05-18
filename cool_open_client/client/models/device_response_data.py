@@ -18,7 +18,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -95,4 +95,15 @@ class DeviceResponseData(BaseModel):
         })
         return _obj
 
-
+    @field_validator('units', mode='before')
+    @classmethod
+    def flatten_nested_units(cls, value: Any) -> List[str]:
+        if isinstance(value, list):
+            flat_list = []
+            for item in value:
+                if isinstance(item, list):
+                    flat_list.extend(item)
+                else:
+                    flat_list.append(item)
+            return flat_list
+        return value
