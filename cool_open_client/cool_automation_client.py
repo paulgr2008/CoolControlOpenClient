@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import gc
 import logging
 import threading
 import time
@@ -107,7 +106,6 @@ def with_exception(function):
         try:
             return await function(*args, **kwargs)
         except ApiException as exception:
-            body = json.loads(exception.body)
             if exception.status == CoolAutomationClient.UNAUTHORIZES_ERROR_CODE:
                 raise InvalidTokenException() from exception
             else:
@@ -138,19 +136,16 @@ class WebSocketThread(Thread):
                     try:
                         self.websocket.keep_running = False
                         self.websocket.close()
-                        gc.collect()
                     except:
                         pass
                 self.websocket = websocket.WebSocketApp(**self.socket_params)
                 self.websocket.run_forever()
 
             except WebSocketException as socket_exception:
-                gc.collect()
                 self.logger.error(
                     "Exception when calling open socket: %s", socket_exception
                 )
             except Exception as exception:
-                gc.collect()
                 self.logger.error("Exception when calling open socket: %s", exception)
 
             time.sleep(10)
