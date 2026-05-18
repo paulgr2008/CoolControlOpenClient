@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import gc
 import logging
@@ -175,6 +176,8 @@ class CoolAutomationClient(Singleton):
         if token is None:
             raise ValueError("Toke cannot be None")
         self.token = token
+        if self.api_client is None:
+            self.api_client = await asyncio.to_thread(ApiClient)
         dictionaries = await self.get_dictionary()
         self._dictionaries: TypesResponseData = dictionaries
         self.temperature_scale = DictTypes(dictionaries.temperature_scale)
@@ -194,7 +197,7 @@ class CoolAutomationClient(Singleton):
             password=password,
             app_id="coolAutomationControl",
         )
-        api = AuthenticationApi()
+        api = AuthenticationApi(api_client=await asyncio.to_thread(ApiClient))
         try:
             result = await api.users_authenticate_post(body)
         except ApiException as error:
@@ -212,7 +215,7 @@ class CoolAutomationClient(Singleton):
         self.swing_modes = None
         self.socket = None
         self._registered_units: dict[str, Updatable] = {}
-        self.api_client = ApiClient()
+        self.api_client = None
         self.logger = logger if logger is not None else _LOGGER
         self.ws_thread: Thread = None
 
