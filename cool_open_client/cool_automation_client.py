@@ -264,6 +264,36 @@ class CoolAutomationClient(Singleton):
         return self._transform_message(message)
 
     @with_exception
+    async def get_all_updated_units(self) -> dict[str, UnitUpdateMessage]:
+        """Fetch all controllable units in a single request and return their
+        current state as a dict keyed by unit ID."""
+        api = UnitsApi(api_client=self.api_client)
+        units_response = await api.units_get(
+            x_access_token=self.token, origin=self.ORIGIN, referer=self.REFERER
+        )
+        units_payload = self._extract_mapping(units_response.data)
+        result: dict[str, UnitUpdateMessage] = {}
+        for _, payload in units_payload.items():
+            try:
+                unit = dict_to_model(UnitResponseData, payload)
+                if unit.id is None:
+                    continue
+                message = UnitUpdateMessage(
+                    ambient_temperature=round_temperature_value(unit.ambient_temperature),
+                    fan_mode=unit.active_fan_mode,
+                    operation_mode=unit.active_operation_mode,
+                    setpoint=round_temperature_value(unit.active_setpoint),
+                    swing=unit.active_swing_mode,
+                    operation_status=unit.active_operation_status,
+                    filter=unit.filter or False,
+                    unit_id=unit.id,
+                )
+                result[unit.id] = self._transform_message(message)
+            except Exception:
+                continue
+        return result
+
+    @with_exception
     async def get_devices(self) -> list[DeviceResponseData]:
         """Returns a list of connected devices
 

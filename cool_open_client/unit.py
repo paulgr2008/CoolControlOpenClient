@@ -124,6 +124,13 @@ class HVACUnit(Updatable):
                 else:
                     self.event_loop.run_until_complete(callback.unit_update_callback())
 
+    @property
+    def needs_refresh(self) -> bool:
+        return not self._update_pending
+
+    def apply_update(self, message: UnitUpdateMessage) -> None:
+        self._update_unit(message, with_callback=False)
+
     async def refresh(self) -> None:
         if not self._update_pending:
             units = await self._client.get_updated_controllable_unit(self._id)
